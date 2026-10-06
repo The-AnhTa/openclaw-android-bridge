@@ -11,10 +11,18 @@ Local GLM -> OpenClaw on a remote VM -> MCP over an SSH tunnel
           -> ADB -> physical Android phone
 ```
 
-Implemented repository stages are Milestone 0 (repository foundation),
-Milestone 1 (Windows and Android prerequisite validation), and Milestone 2
-(local Appium MCP smoke testing). OpenClaw, the remote VM, SSH tunnelling, and
-network transport belong to later milestones and are not configured here.
+The project is progressing through independently testable milestones:
+
+| Milestone | Scope | Status |
+| --- | --- | --- |
+| 1 | Windows and Android prerequisites | PASS |
+| 2 | Local MCP to Android | PASS |
+| 3 | VM through SSH and MCP to Android | Target |
+| 4 | OpenClaw through MCP to Android | Future |
+
+Milestone 3 adds the loopback HTTP transport, SSH reverse-tunnel tooling, and a
+standalone VM smoke client. It is not complete until that client passes on the
+actual VM. OpenClaw and the GLM remain out of scope.
 
 ## First-stage validation
 
@@ -49,6 +57,24 @@ The test starts the repository-local `appium-mcp` over stdio, uses its embedded
 UiAutomator2 driver, opens Android Settings, reads the UI hierarchy, and deletes
 the session. It does not install standalone Appium or expose a TCP port.
 
+## VM tunnel target
+
+Milestone 3 is exercised in three foreground processes:
+
+```powershell
+# Laptop terminal 1
+.\scripts\windows\start-appium-mcp-http.ps1
+
+# Laptop terminal 2 (replace placeholders; values are never stored)
+.\scripts\windows\start-vm-tunnel.ps1 -VmHost <host> -VmUser <user>
+```
+
+Then run the cross-platform client on the VM as documented in
+[remote MCP tunnel](docs/remote-mcp-tunnel.md). The pinned upstream version's
+effective Streamable HTTP path is `/sse`. Both the laptop server and VM reverse
+forward are restricted to `127.0.0.1`.
+
 See [prerequisites](docs/prerequisites.md), [architecture](docs/architecture.md),
 [Appium MCP](docs/appium-mcp.md), and [tested versions](docs/tested-versions.md)
-for details.
+for details. The [dependency audit](docs/dependency-audit.md) is recorded
+separately from milestone implementation.

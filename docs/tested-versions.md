@@ -20,9 +20,9 @@ The only explicit version floor currently enforced by the doctor is Node.js
 22 or newer.
 
 The Appium MCP and embedded-driver versions above were confirmed from the
-installed `npm ci` dependency tree. On the initial physical Xiaomi test device,
-MCP stdio connection, tool discovery, and device selection succeeded, but the
-device rejected deployment of the embedded driver's Android test server with
-`INSTALL_FAILED_USER_RESTRICTED`. Consequently, an end-to-end UiAutomator2
-session is not yet recorded as passing on that device.
+installed `npm ci` dependency tree. Milestone 2 subsequently passed end to end
+on a physical Samsung Android phone: stdio initialization, tool discovery,
+device selection, embedded UiAutomator2 session creation, Android Settings
+activation, page-source and device-information retrieval, and clean deletion.
+These are tested versions, not minimum versions.
 

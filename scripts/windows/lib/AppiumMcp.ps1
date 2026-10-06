@@ -11,6 +11,15 @@ function Set-AppiumMcpProcessEnvironment {
     $env:NO_UI = 'true'
 }
 
+function Set-AppiumMcpHttpProcessEnvironment {
+    Set-AppiumMcpProcessEnvironment
+
+    # FastMCP honors this when appium-mcp's CLI does not provide an explicit
+    # host. Pinning the address avoids the platform-dependent "localhost"
+    # resolution and is still verified against the actual Windows listener.
+    $env:FASTMCP_HOST = '127.0.0.1'
+}
+
 function Get-LocalAppiumMcpInstallation {
     param([Parameter(Mandatory = $true)][string]$RepositoryRoot)
 
