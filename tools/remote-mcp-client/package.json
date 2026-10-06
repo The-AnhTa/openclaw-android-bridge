@@ -1,0 +1,21 @@
+{
+  "name": "openclaw-android-bridge-remote-mcp-client",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Cross-platform VM-side MCP smoke client for openclaw-android-bridge",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "esbuild ./appium-http-smoke-client.mjs --bundle --platform=node --format=esm --target=node22 --legal-comments=eof --outfile=./dist/appium-http-smoke-client.mjs",
+    "smoke:dist": "node ./dist/appium-http-smoke-client.mjs",
+    "smoke": "node ./appium-http-smoke-client.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

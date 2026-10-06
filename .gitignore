@@ -1,18 +1,32 @@
-# Build and Release Folders
-bin-debug/
-bin-release/
-[Oo]bj/
-[Bb]in/
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
 
-# Other files and folders
-.settings/
+# Node.js and tool output
+node_modules/
+npm-debug.log*
+*.log
+coverage/
+dist/
+build/
 
-# Executables
-*.swf
-*.air
-*.ipa
+# The VM smoke client is intentionally shipped as a self-contained artifact.
+!tools/remote-mcp-client/dist/
+!tools/remote-mcp-client/dist/appium-http-smoke-client.mjs
+
+# Android and Appium output
+local.properties
 *.apk
+*.aab
+.appium/
 
-# Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
-# should NOT be excluded as they contain compiler settings and other important
-# information for Eclipse / Flash Builder.
+# Editors and operating systems
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+Desktop.ini
