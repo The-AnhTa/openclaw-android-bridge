@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][ValidatePattern('^(?!-)[A-Za-z0-9._:-]+$')][string]$VmHost,
-    [Parameter(Mandatory = $true)][ValidatePattern('^(?!-)[A-Za-z0-9._-]+$')][string]$VmUser,
+    [Parameter(Mandatory = $true)][string]$VmUser,
     [ValidateRange(1, 65535)][int]$VmSshPort = 22,
     [ValidateRange(1, 65535)][int]$LocalMcpPort = 8765,
     [ValidateRange(1, 65535)][int]$VmMcpPort = 8765,
@@ -13,6 +13,12 @@ $ErrorActionPreference = 'Stop'
 try {
     . (Join-Path $PSScriptRoot 'lib\Common.ps1')
     . (Join-Path $PSScriptRoot 'lib\McpListener.ps1')
+    . (Join-Path $PSScriptRoot 'lib\SshTunnel.ps1')
+
+    if (-not (Test-SafeSshUserName -UserName $VmUser)) {
+        Write-Fail 'VM SSH username is invalid. Use username, DOMAIN\username, or username@example.com without whitespace or shell/control characters.'
+        exit 1
+    }
 
     $sshPath = Resolve-ExternalCommand -Names @('ssh.exe', 'ssh')
     if (-not $sshPath) {
@@ -53,7 +59,7 @@ try {
     $sshArguments += "${VmUser}@${VmHost}"
 
     Write-Pass 'Reverse tunnel command is constrained to loopback on both endpoints.'
-    Write-Host "VM MCP URL: http://127.0.0.1:${VmMcpPort}/sse"
+    Write-Host "VM MCP URL: http://127.0.0.1:${VmMcpPort}/sse (SDK transport: StreamableHTTPClientTransport)"
     Write-Host "Command: ssh -N -T -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -p $VmSshPort -R 127.0.0.1:${VmMcpPort}:127.0.0.1:${LocalMcpPort} <VM_USER>@<VM_HOST>"
     Write-Host 'Authenticate if prompted. The foreground SSH process is the tunnel; press Ctrl+C to stop it.'
 

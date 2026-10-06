@@ -13,6 +13,10 @@ coverage/
 dist/
 build/
 
+# The VM smoke client is intentionally shipped as a self-contained artifact.
+!tools/remote-mcp-client/dist/
+!tools/remote-mcp-client/dist/appium-http-smoke-client.mjs
+
 # Android and Appium output
 local.properties
 *.apk

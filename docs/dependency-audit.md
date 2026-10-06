@@ -26,6 +26,8 @@ reported `appium-mcp` as a directly affected high-severity dependency and
 suggested a version change that conflicts with the required 1.95.0 pin.
 
 The separate VM client dependency graph reported zero vulnerabilities when its
-lockfile was generated. No `npm audit fix`, dependency upgrade, downgrade, or
-transitive override was applied during Milestone 3.
-
+lockfile was generated and again after adding pinned development bundler
+`esbuild` 0.28.2. The bundler runs only on the laptop/development machine; its
+single-file output requires only Node.js 22 or newer on the VM. No
+`npm audit fix`, dependency upgrade, downgrade, or transitive override was
+applied during Milestone 3.

@@ -50,7 +50,7 @@ try {
 
     Set-AppiumMcpHttpProcessEnvironment
     $endpoint = '/sse'
-    Write-Pass "Starting pinned appium-mcp Streamable HTTP on 127.0.0.1:$Port$endpoint."
+    Write-Pass "Starting pinned appium-mcp at 127.0.0.1:$Port$endpoint with Streamable HTTP semantics."
 
     $startInfo = New-Object System.Diagnostics.ProcessStartInfo
     $startInfo.FileName = $nodePath

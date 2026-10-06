@@ -2,26 +2,31 @@
 
 ## Architecture
 
-Milestone 3 targets this path without involving OpenClaw:
+Milestone 3 passed on this path without involving OpenClaw:
 
 ```text
 VM Node MCP client
-  -> http://127.0.0.1:8765/sse
-  -> SSH encrypted reverse forward
+  -> VM 127.0.0.1:8765
+  -> SSH encrypted reverse tunnel
   -> laptop 127.0.0.1:8765/sse
   -> appium-mcp 1.95.0
   -> embedded UiAutomator2
   -> ADB
-  -> physical Android phone
+  -> Samsung Android device
 ```
 
 Appium MCP remains on the laptop because the laptop owns the USB connection,
-Android Studio JBR, Android SDK, and ADB. The VM needs only Node.js 22 or newer,
-npm, and an SSH server that permits remote TCP forwarding.
+Android Studio JBR, Android SDK, and ADB. The normal VM acceptance path needs
+only Node.js 22 or newer and an SSH server that permits remote TCP forwarding;
+it runs the repository's prebuilt client artifact and does not run npm on the
+VM.
 
 Streamable HTTP is introduced because stdio cannot cross the VM boundary. The
 pinned upstream CLI names this mode `httpStream`; inspection and local testing
-confirm that version 1.95.0 serves its effective MCP endpoint at `/sse`.
+confirm that version 1.95.0 serves its effective MCP endpoint at `/sse`. The
+client imports and instantiates the MCP TypeScript SDK's
+`StreamableHTTPClientTransport`. `/sse` is the upstream route name, not evidence
+that the client uses the SDK's legacy SSE transport class.
 
 ## Loopback security
 
@@ -75,24 +80,50 @@ reachable from a LAN interface. `GatewayPorts` is not requested or modified.
      -VmMcpPort 8765
    ```
 
-7. On the VM, copy or clone the repository and run:
+7. On a development machine or laptop, rebuild the self-contained artifact
+   after changing the client or its pinned dependencies:
+
+   ```powershell
+   npm ci --prefix .\tools\remote-mcp-client
+   npm run --prefix .\tools\remote-mcp-client build
+   ```
+
+8. Copy or clone the committed artifact to the VM, then run it with Node.js 22
+   or newer:
 
    ```sh
-   cd tools/remote-mcp-client
-   npm ci
-   node appium-http-smoke-client.mjs --vm --url http://127.0.0.1:8765/sse
+   node tools/remote-mcp-client/dist/appium-http-smoke-client.mjs \
+     --vm --url http://127.0.0.1:8765/sse
    ```
+
+   No `npm install`, `npm ci`, or `node_modules` directory is required on the
+   VM for this path. The artifact contains the pinned MCP SDK runtime code but
+   contains no hostnames, usernames, IP addresses other than loopback defaults,
+   Android serials, credentials, or keys.
 
 The VM client keeps one MCP connection open from initialization through Appium
 session deletion. It never reconnects between Appium operations.
 
-## Current validation state
+## Validation state
 
-The pinned HTTP server has been observed listening only on
-`127.0.0.1:8765`, and the VM client code has completed its full Android sequence
-against that laptop-loopback endpoint. This proves the new HTTP client and
-server path but not the SSH or VM hop. Milestone 3 remains a target until the
-same client passes on the actual VM with `--vm`.
+Milestone 3 is PASS. On the VM, `127.0.0.1:8765` was independently confirmed as
+the listening endpoint created by the SSH reverse forward while Appium MCP was
+running on laptop `127.0.0.1:8765/sse`. From that VM, the Node MCP client
+initialized MCP, discovered the required tools, selected the Android device,
+created an embedded UiAutomator2 session, activated Settings, read page source
+and device information, deleted the session, and closed the connection.
+
+The tested phone was a Samsung SM-A155F running Android 16 / API 36. That is a
+tested configuration, not a device requirement.
+
+## Constrained VM deployment
+
+The test VM could run Node.js successfully, but npm package operations failed
+with native memory-allocation / `VirtualAlloc failed` errors. Copying the
+already-installed dependency tree from the laptop proved that this was a VM
+memory constraint rather than an MCP, Appium, or Android failure. The bundled
+artifact now makes that workaround unnecessary for the normal acceptance path:
+build it on the laptop, and run it on the VM with Node.js 22 or newer.
 
 ## Shutdown order
 
@@ -123,6 +154,8 @@ to clean up its owned session on client disconnect.
   `AllowTcpForwarding`; the script does not edit SSH server configuration.
 - **VM URL unreachable:** confirm both foreground laptop processes are still
   running and that the client uses VM loopback with the `/sse` path.
+- **npm fails on a constrained VM:** use the committed bundled artifact. npm is
+  a laptop-side build dependency, not a VM runtime requirement.
 - **MCP initialization failure:** confirm the pinned server finished startup,
   verify the URL, and run the laptop-local HTTP tool-discovery test.
 - **HTTP disconnect loses the Appium session:** this is expected safe cleanup.

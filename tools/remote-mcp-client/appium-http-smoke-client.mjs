@@ -138,9 +138,10 @@ try {
     maxTotalTimeout: REQUEST_TIMEOUT_MS,
   });
   connected = true;
-  pass(options.vmMode
-    ? "Connected to remote MCP endpoint through SSH tunnel"
-    : "Connected to loopback Streamable HTTP MCP endpoint");
+  pass("Connected to the loopback /sse route using StreamableHTTPClientTransport");
+  if (options.vmMode) {
+    warn("VM mode cannot identify the SSH hop; verify the reverse forward independently");
+  }
   pass("MCP initialization completed");
 
   const toolsResponse = await client.listTools(undefined, {
@@ -234,7 +235,7 @@ try {
     try {
       await client.close();
       connected = false;
-      pass(options?.vmMode ? "Remote MCP connection closed" : "MCP connection closed");
+      pass("MCP connection closed");
     } catch (error) {
       cleanupError ??= error;
     }
@@ -256,5 +257,5 @@ if (primaryError || cleanupError) {
 } else if (!options?.vmMode) {
   pass("Full Streamable HTTP-to-Android smoke test passed; SSH was not asserted");
 } else {
-  pass("Milestone 3 VM-to-Android smoke test passed");
+  pass("VM-mode Streamable HTTP-to-Android smoke test passed; SSH requires independent evidence");
 }

@@ -24,8 +24,8 @@ Appium.
   SDK, ADB, and exactly one authorized physical device.
 - Milestone 2 validates a local MCP-to-Android path over stdio using the pinned
   repository-local Appium MCP and its embedded UiAutomator2 driver.
-- Milestone 3 targets a VM-side Node MCP client connected to Appium MCP through
-  loopback-only Streamable HTTP and an SSH reverse forward.
+- Milestone 3 validates a VM-side Node MCP client connected to Appium MCP
+  through an SSH reverse forward and loopback-only HTTP endpoints.
 
 Milestone 3 introduces the first network listener, but constrains it to laptop
 loopback and validates the actual Windows socket after startup. The reverse
@@ -35,12 +35,37 @@ forward explicitly binds VM loopback and targets laptop loopback:
 VM 127.0.0.1:8765 -> SSH reverse forwarding -> laptop 127.0.0.1:8765
 ```
 
+The complete tested path is:
+
+```text
+VM Node MCP client
+  -> VM 127.0.0.1:8765
+  -> SSH reverse tunnel
+  -> laptop 127.0.0.1:8765/sse
+  -> appium-mcp 1.95.0
+  -> embedded UiAutomator2
+  -> ADB
+  -> Samsung Android device
+```
+
+The client uses the MCP TypeScript SDK's `StreamableHTTPClientTransport`.
+`/sse` is the effective route exposed by the pinned Appium MCP CLI; its path
+name does not change the SDK transport class or its Streamable HTTP semantics.
+The tested device was a Samsung SM-A155F running Android 16 / API 36, but no
+script or client behavior depends on that model.
+
 No LAN listener or firewall rule is part of the architecture. Scripts make
 process-local environment changes only and do not edit the registry or
 persistent environment variables.
 
-## Deferred milestones
+## Milestone status
 
-Milestone 3 is a target until its VM-side acceptance test succeeds. Milestone 4
-will connect OpenClaw to the proven MCP endpoint; OpenClaw and the GLM are not
-configured during Milestone 3.
+| Milestone | Scope | Status |
+| --- | --- | --- |
+| 1 | Windows + Android prerequisites | PASS |
+| 2 | Local MCP -> Android | PASS |
+| 3 | VM -> SSH -> MCP -> Android | PASS |
+| 4 | OpenClaw -> MCP -> Android | NEXT |
+
+Milestone 4 will connect OpenClaw to the proven MCP endpoint. OpenClaw and the
+GLM have not been configured by Milestone 3.

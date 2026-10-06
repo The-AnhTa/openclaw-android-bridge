@@ -35,7 +35,7 @@ try {
         exit 1
     }
 
-    Write-Pass 'Local Streamable HTTP MCP transport test passed.'
+    Write-Pass 'Local MCP test passed using the SDK StreamableHTTPClientTransport against the /sse route.'
     exit 0
 }
 catch {
