@@ -11,10 +11,10 @@ Local GLM -> OpenClaw on a remote VM -> MCP over an SSH tunnel
           -> ADB -> physical Android phone
 ```
 
-This repository currently covers only Milestone 0 (repository foundation) and
-Milestone 1 (Windows and Android prerequisite validation). OpenClaw, SSH
-tunnelling, Appium MCP, Appium, and UiAutomator2 integration belong to later
-milestones and are not configured here.
+Implemented repository stages are Milestone 0 (repository foundation),
+Milestone 1 (Windows and Android prerequisite validation), and Milestone 2
+(local Appium MCP smoke testing). OpenClaw, the remote VM, SSH tunnelling, and
+network transport belong to later milestones and are not configured here.
 
 ## First-stage validation
 
@@ -35,5 +35,20 @@ For an Android-focused check, run:
 .\scripts\windows\check-device.ps1
 ```
 
+## Local Appium MCP smoke test
+
+Install the pinned repository dependencies and run the acceptance test:
+
+```powershell
+npm ci
+.\scripts\windows\doctor.ps1
+.\scripts\windows\test-appium-mcp.ps1
+```
+
+The test starts the repository-local `appium-mcp` over stdio, uses its embedded
+UiAutomator2 driver, opens Android Settings, reads the UI hierarchy, and deletes
+the session. It does not install standalone Appium or expose a TCP port.
+
 See [prerequisites](docs/prerequisites.md), [architecture](docs/architecture.md),
-and [tested versions](docs/tested-versions.md) for details.
+[Appium MCP](docs/appium-mcp.md), and [tested versions](docs/tested-versions.md)
+for details.

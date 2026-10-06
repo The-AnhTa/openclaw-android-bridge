@@ -2,16 +2,31 @@ Set-StrictMode -Version Latest
 
 function Write-Pass {
     param([Parameter(Mandatory = $true)][string]$Message)
+    $stderrPreference = Get-Variable -Name DiagnosticsToStandardError -Scope Script -ErrorAction SilentlyContinue
+    if ($stderrPreference -and $stderrPreference.Value) {
+        [Console]::Error.WriteLine("[PASS] $Message")
+        return
+    }
     Write-Host "[PASS] $Message" -ForegroundColor Green
 }
 
 function Write-Warn {
     param([Parameter(Mandatory = $true)][string]$Message)
+    $stderrPreference = Get-Variable -Name DiagnosticsToStandardError -Scope Script -ErrorAction SilentlyContinue
+    if ($stderrPreference -and $stderrPreference.Value) {
+        [Console]::Error.WriteLine("[WARN] $Message")
+        return
+    }
     Write-Host "[WARN] $Message" -ForegroundColor Yellow
 }
 
 function Write-Fail {
     param([Parameter(Mandatory = $true)][string]$Message)
+    $stderrPreference = Get-Variable -Name DiagnosticsToStandardError -Scope Script -ErrorAction SilentlyContinue
+    if ($stderrPreference -and $stderrPreference.Value) {
+        [Console]::Error.WriteLine("[FAIL] $Message")
+        return
+    }
     Write-Host "[FAIL] $Message" -ForegroundColor Red
 }
 
@@ -92,6 +107,35 @@ function Test-HostCommand {
 
     Write-Pass "$Label available: $versionText"
     return $true
+}
+
+function Test-WindowsHostPrerequisites {
+    $allChecksPassed = $true
+
+    if (-not (Test-HostCommand -Label 'Git' -CommandNames @('git.exe', 'git') -VersionArguments @('--version'))) {
+        $allChecksPassed = $false
+    }
+
+    $nodeVersionValidator = {
+        param([string]$VersionText)
+        if ($VersionText -notmatch '^v?(\d+)\.') {
+            return $false
+        }
+        return ([int]$Matches[1] -ge 22)
+    }
+    if (-not (Test-HostCommand -Label 'Node.js' -CommandNames @('node.exe', 'node') -VersionArguments @('--version') -VersionValidator $nodeVersionValidator -VersionRequirement 'Node.js 22 or newer')) {
+        $allChecksPassed = $false
+    }
+
+    if (-not (Test-HostCommand -Label 'npm' -CommandNames @('npm.cmd', 'npm.exe', 'npm') -VersionArguments @('--version'))) {
+        $allChecksPassed = $false
+    }
+
+    if (-not (Test-HostCommand -Label 'OpenSSH client' -CommandNames @('ssh.exe', 'ssh') -VersionArguments @('-V'))) {
+        $allChecksPassed = $false
+    }
+
+    return $allChecksPassed
 }
 
 function Get-AndroidStudioInstallPathsFromRegistry {
@@ -291,13 +335,13 @@ function Get-AndroidProperty {
     return (($result.Lines -join "`n").Trim())
 }
 
-function Test-ConnectedAndroidDevice {
+function Get-AuthorizedAndroidDevice {
     param([Parameter(Mandatory = $true)][string]$AdbPath)
 
     $result = Invoke-NativeCommand -FilePath $AdbPath -Arguments @('devices', '-l')
     if ($result.ExitCode -ne 0) {
         Write-Fail 'The command "adb devices -l" failed.'
-        return $false
+        return $null
     }
 
     $devices = @()
@@ -319,7 +363,7 @@ function Test-ConnectedAndroidDevice {
 
     if ($devices.Count -eq 0) {
         Write-Fail 'No Android device detected. Connect and unlock one USB-debugging-enabled phone.'
-        return $false
+        return $null
     }
 
     if ($devices.Count -gt 1) {
@@ -327,25 +371,25 @@ function Test-ConnectedAndroidDevice {
         foreach ($device in $devices) {
             Write-Warn "Device '$($device.Serial)' is in state '$($device.State)'."
         }
-        return $false
+        return $null
     }
 
     $device = $devices[0]
     switch ($device.State) {
         'unauthorized' {
             Write-Fail "Android device '$($device.Serial)' is unauthorized. Unlock it and accept the USB-debugging prompt."
-            return $false
+            return $null
         }
         'offline' {
             Write-Fail "Android device '$($device.Serial)' is offline. Reconnect it and restart USB debugging if needed."
-            return $false
+            return $null
         }
         'device' {
             # Continue with property checks below.
         }
         default {
             Write-Fail "Android device '$($device.Serial)' is in unsupported state '$($device.State)'."
-            return $false
+            return $null
         }
     }
 
@@ -353,13 +397,14 @@ function Test-ConnectedAndroidDevice {
     Write-Pass "Device serial: $($device.Serial)"
 
     $properties = @(
-        @{ Label = 'Manufacturer'; Name = 'ro.product.manufacturer' },
-        @{ Label = 'Model'; Name = 'ro.product.model' },
-        @{ Label = 'Android version'; Name = 'ro.build.version.release' },
-        @{ Label = 'Android SDK/API level'; Name = 'ro.build.version.sdk' }
+        @{ Key = 'Manufacturer'; Label = 'Manufacturer'; Name = 'ro.product.manufacturer' },
+        @{ Key = 'Model'; Label = 'Model'; Name = 'ro.product.model' },
+        @{ Key = 'AndroidVersion'; Label = 'Android version'; Name = 'ro.build.version.release' },
+        @{ Key = 'ApiLevel'; Label = 'Android SDK/API level'; Name = 'ro.build.version.sdk' }
     )
 
     $allPropertiesAvailable = $true
+    $propertyValues = @{}
     foreach ($property in $properties) {
         $value = Get-AndroidProperty -AdbPath $AdbPath -Serial $device.Serial -PropertyName $property.Name
         if ([string]::IsNullOrWhiteSpace($value)) {
@@ -367,9 +412,28 @@ function Test-ConnectedAndroidDevice {
             $allPropertiesAvailable = $false
         }
         else {
+            $propertyValues[$property.Key] = $value
             Write-Pass "$($property.Label): $value"
         }
     }
 
-    return $allPropertiesAvailable
+    if (-not $allPropertiesAvailable) {
+        return $null
+    }
+
+    return [PSCustomObject]@{
+        Serial         = $device.Serial
+        State          = $device.State
+        Manufacturer   = $propertyValues.Manufacturer
+        Model          = $propertyValues.Model
+        AndroidVersion = $propertyValues.AndroidVersion
+        ApiLevel       = $propertyValues.ApiLevel
+    }
+}
+
+function Test-ConnectedAndroidDevice {
+    param([Parameter(Mandatory = $true)][string]$AdbPath)
+
+    $device = Get-AuthorizedAndroidDevice -AdbPath $AdbPath
+    return ($null -ne $device)
 }
