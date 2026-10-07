@@ -18,10 +18,11 @@ The project is progressing through independently testable milestones:
 | 1 | Windows + Android prerequisites | PASS |
 | 2 | Local MCP -> Android | PASS |
 | 3 | VM -> SSH -> MCP -> Android | PASS |
-| 4 | OpenClaw -> MCP -> Android | NEXT |
+| 4 | OpenClaw -> MCP -> Android | PASS |
 
 Milestone 3 proved the VM-to-phone path through a loopback-only SSH reverse
-tunnel. OpenClaw and the GLM remain out of scope until Milestone 4.
+tunnel. Milestone 4 passed after the automated validator confirmed the exact
+successful session in OpenClaw's authoritative per-agent SQLite store.
 
 ## First-stage validation
 
@@ -74,6 +75,23 @@ the tested route is `/sse`; the client uses the MCP SDK's
 `StreamableHTTPClientTransport`. The route name does not imply that the client
 uses the SDK's legacy SSE transport. Both the laptop server and VM reverse
 forward are restricted to `127.0.0.1`.
+
+## OpenClaw integration
+
+After the laptop Appium MCP server and SSH reverse tunnel are already running,
+use the existing OpenClaw installation on the Windows VM:
+
+```powershell
+.\scripts\vm\check-openclaw-android.ps1
+.\scripts\vm\configure-openclaw-android.ps1
+.\scripts\vm\test-openclaw-android.ps1
+```
+
+The configuration script registers only `http://127.0.0.1:8765/sse` with
+canonical transport `streamable-http`, a four-tool allowlist, and bounded
+timeouts. It does not alter the existing model/provider or lower Android stack.
+See [OpenClaw integration](docs/openclaw-integration.md) for the startup order,
+acceptance evidence, cleanup, and troubleshooting.
 
 See [prerequisites](docs/prerequisites.md), [architecture](docs/architecture.md),
 [Appium MCP](docs/appium-mcp.md), and [tested versions](docs/tested-versions.md)

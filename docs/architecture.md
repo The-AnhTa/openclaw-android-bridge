@@ -26,6 +26,8 @@ Appium.
   repository-local Appium MCP and its embedded UiAutomator2 driver.
 - Milestone 3 validates a VM-side Node MCP client connected to Appium MCP
   through an SSH reverse forward and loopback-only HTTP endpoints.
+- Milestone 4 validates replacing that standalone client with the VM's existing
+  OpenClaw agent and OpenClaw-managed `android` MCP server definition.
 
 Milestone 3 introduces the first network listener, but constrains it to laptop
 loopback and validates the actual Windows socket after startup. The reverse
@@ -65,7 +67,25 @@ persistent environment variables.
 | 1 | Windows + Android prerequisites | PASS |
 | 2 | Local MCP -> Android | PASS |
 | 3 | VM -> SSH -> MCP -> Android | PASS |
-| 4 | OpenClaw -> MCP -> Android | NEXT |
+| 4 | OpenClaw -> MCP -> Android | PASS |
 
-Milestone 4 will connect OpenClaw to the proven MCP endpoint. OpenClaw and the
-GLM have not been configured by Milestone 3.
+Milestone 4 scripts configure and test this target path:
+
+```text
+Local GLM
+  -> OpenClaw
+  -> OpenClaw-managed android MCP server
+  -> VM 127.0.0.1:8765/sse
+  -> SSH reverse tunnel
+  -> laptop appium-mcp 1.95.0
+  -> embedded UiAutomator2
+  -> ADB
+  -> physical Android phone
+```
+
+Milestone 4 passed when the automated acceptance validator confirmed the exact
+successful OpenClaw session directly from the per-agent SQLite runtime
+trajectory store. The evidence proves that the actual agent turn invoked the
+four allowed Android tools, retrieved non-empty Settings page source, and
+deleted its Appium session. The existing model/provider and the proven lower
+stack were not changed by this milestone.

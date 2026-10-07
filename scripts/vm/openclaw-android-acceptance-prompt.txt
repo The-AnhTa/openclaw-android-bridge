@@ -1,0 +1,21 @@
+Use only the configured Android MCP tools for this task.
+
+Connect to the single available Android device.
+Create an Android UiAutomator2 session with noReset=true.
+Open Android Settings using the app identifier com.android.settings.
+Retrieve the current Android page source.
+Confirm that Settings is open by inspecting the returned non-empty UI hierarchy.
+
+Do not change any setting.
+Do not enter text.
+Do not install or uninstall anything.
+Do not change permissions.
+Do not execute shell commands.
+Do not clear app data or transfer files.
+
+Delete the Appium session before returning, including when an earlier step fails.
+
+Return only one JSON object with exactly these fields and boolean values:
+{"deviceSelected":true,"sessionCreated":true,"settingsOpened":true,"pageSourceNonEmpty":true,"sessionDeleted":true,"phoneChanged":false}
+
+Set a field to false if that action was not confirmed. Never claim success for an action that did not complete through a tool call.
